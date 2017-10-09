@@ -1,4 +1,4 @@
-final int SQUARE_SIZE = 5;
+final int SQUARE_SIZE = 10;
 int numRows, numCols;
 Cell[][] grid;
 
@@ -7,12 +7,12 @@ boolean settingUp = true;
 int generation = 0;
 int numberAlive = 0;
 
-
 void setup() {
-    size(800, 400);
+    size(300, 300);
     numRows = width/SQUARE_SIZE;
     numCols = height/SQUARE_SIZE;
     grid = initGrid();
+    generateRandomSeed();
 }
 
 
@@ -37,17 +37,33 @@ void draw() {
             }
         }
     } else {
-        frameRate(30);
+        frameRate(15);
         applyRules();
         if (keyPressed && key == 'r') {
-            settingUp = true;
-            grid = initGrid();
-            generation = 0;
-            numberAlive = 0;
+            reset();
         }
     }
 
     drawGrid();
+}
+
+void startButtonPressed() {
+    settingUp = false;
+}
+
+void generateButtonPressed() {
+    generateRandomSeed();
+}
+
+void stopButtonPressed() {
+    reset();
+}
+
+void reset() {
+    settingUp = true;
+    grid = initGrid();
+    generation = 0;
+    numberAlive = 0;
 }
 
 void applyRules() {
@@ -101,6 +117,7 @@ void drawGrid() {
         }
     }
 
+/*
     fill(255, 255, 255, 200);
     rect(20, 20, 300, 100);
     fill(0);
@@ -109,6 +126,7 @@ void drawGrid() {
     } else {
         text("Simulation is running \nGeneration: " + generation++ + "\nNumber alive: " + numberAlive + "\nHold 'r' to reset", 50, 50);
     }
+    */
 }
 
 int[] getIndex(int x, int y) {
@@ -148,11 +166,47 @@ void generateRandomSeed() {
     for (int i=0; i<numRows; i++) {
         for (int j=0; j<numCols; j++) {
             float r = random(1);
-            if (r > 0.6) {
+            if (r > 0.8) {
                 grid[i][j].alive = true;
             } else {
                 grid[i][j].alive = false;
             }
+        }
+    }
+}
+
+
+
+class Cell {
+    boolean alive;
+    int red;
+    int blue;
+    
+    final static int COLOUR_STEP = 2;
+
+    Cell() {
+        alive = false;
+        red = 0;
+        blue = 255;
+    }
+
+    void kill() {
+        this.alive = false;
+        this.red = 0;
+        this.blue = 255;
+    }
+
+    void create() {
+        this.alive = true;
+    }
+
+    void age() {
+        if (blue > 20) {
+            this.blue -= COLOUR_STEP;
+        }
+        
+        if (red < 255) {
+            this.red += COLOUR_STEP;
         }
     }
 }
