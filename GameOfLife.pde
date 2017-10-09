@@ -1,14 +1,18 @@
-final int SQUARE_SIZE = 10;
+final int SQUARE_SIZE = 5;
 int numRows, numCols;
-boolean[][] grid;
-int generation = 0;
+Cell[][] grid;
+
 boolean settingUp = true;
 
+int generation = 0;
+int numberAlive = 0;
+
+
 void setup() {
-    size(900, 900);
+    size(800, 400);
     numRows = width/SQUARE_SIZE;
     numCols = height/SQUARE_SIZE;
-    grid = new boolean[numRows][numCols];
+    grid = initGrid();
 }
 
 
@@ -20,21 +24,26 @@ void draw() {
         int j = coords[1];
         if (mousePressed) {
             if (mouseButton == LEFT) {
-                grid[i][j] = true;
+                grid[i][j].create();
             } else {
-                grid[i][j] = false;
+                grid[i][j].kill();
             }
         }
-        if (keyPressed && key == 's') {
-            settingUp = false;
+        if (keyPressed) {
+            if (key == 's') {
+                settingUp = false;
+            } else if (key =='g') {
+                generateRandomSeed();
+            }
         }
     } else {
-        frameRate(5);
+        frameRate(30);
         applyRules();
         if (keyPressed && key == 'r') {
             settingUp = true;
-            grid = new boolean[numRows][numCols];
+            grid = initGrid();
             generation = 0;
+            numberAlive = 0;
         }
     }
 
@@ -42,20 +51,24 @@ void draw() {
 }
 
 void applyRules() {
-    boolean[][] nextGrid = new boolean[numRows][numCols];
+    Cell[][] nextGrid = initGrid();
+    numberAlive = 0;
 
     for (int i=0; i<numRows; i++) {
         for (int j=0; j<numCols; j++) {
             int numNeighbours = getNumberOfNeighbours(i, j);
-            if (numNeighbours < 2) {
-                nextGrid[i][j] = false;
-            } else if (numNeighbours > 3) {
-                nextGrid[i][j] = false;
-            } else if (numNeighbours == 3){
-                nextGrid[i][j] = true;
+            if (numNeighbours < 2 || numNeighbours > 3) {
+                nextGrid[i][j].kill();
             } else {
-                if(grid[i][j]) {
-                     nextGrid[i][j] = true;  
+                // Two or three neighbours
+                if (!grid[i][j].alive && numNeighbours == 3) {
+                    nextGrid[i][j].create();
+                    numberAlive ++;
+                } else {
+                    // Alive with two or 3 neighbours
+                    Cell oldCell = grid[i][j];
+                    oldCell.age();
+                    nextGrid[i][j] = oldCell;
                 }
             }
         }
@@ -63,27 +76,38 @@ void applyRules() {
     grid = nextGrid;
 }
 
+Cell[][] initGrid() {
+    Cell[][] grid = new Cell[numRows][numCols];
+    for (int i=0; i<numRows; i++ ) {
+        for (int j=0; j<numCols; j++) {
+            grid[i][j] = new Cell();
+        }
+    }
+
+    return grid;
+}
+
 void drawGrid() {
     background(0);
-    fill(255);
     for (int i=0; i<numRows; i++) {
         for (int j=0; j<numCols; j++) {
-            if (grid[i][j]) {
+            Cell cell = grid[i][j];
+            if (cell.alive) {
                 int x = i*SQUARE_SIZE;
                 int y = j*SQUARE_SIZE;
+                fill(cell.red, 0, cell.blue);
                 rect(x, y, SQUARE_SIZE, SQUARE_SIZE);
             }
         }
     }
 
-    fill(150, 100, 0);
-    rect(20, 20, 200, 80);
-    fill(255);
+    fill(255, 255, 255, 200);
+    rect(20, 20, 300, 100);
+    fill(0);
     if (settingUp) {
-        text("Draw the initial cells", 50, 50);
+        text("Use Left Mouse to populate \nUse right mouse to kill \nPress 'g' to generate a random seed \nPress 's' to start", 50, 50);
     } else {
-        text("Simulation is running", 50, 50);
-        text("Generation: " + generation++, 50, 80);
+        text("Simulation is running \nGeneration: " + generation++ + "\nNumber alive: " + numberAlive + "\nHold 'r' to reset", 50, 50);
     }
 }
 
@@ -104,22 +128,31 @@ int getNumberOfNeighbours(int r, int c) {
     int colMin = max(c-1, 0);
     int colMax = min(c+1, numCols-1);
 
-   // println("Checking Cell (" + r + "," + c + ")");
+    // println("Checking Cell (" + r + "," + c + ")");
 
     for (int row = rowMin; row <= rowMax; row++) {
         for (int col = colMin; col <= colMax; col++) {
             //println(count++ + ": Checking (" + x + ", " + y + ")"); 
             if (row != r || col != c) {
-                if (grid[row][col]) {
+                if (grid[row][col].alive) {
                     numberOfNeighbours ++;
                 }
             }
         }
     }
-    
-    if(numberOfNeighbours > 0) {
-        println("(" + r + "," + c + ") had " + numberOfNeighbours + "\n");
-    }
-    
+
     return numberOfNeighbours;
+}
+
+void generateRandomSeed() {
+    for (int i=0; i<numRows; i++) {
+        for (int j=0; j<numCols; j++) {
+            float r = random(1);
+            if (r > 0.6) {
+                grid[i][j].alive = true;
+            } else {
+                grid[i][j].alive = false;
+            }
+        }
+    }
 }
